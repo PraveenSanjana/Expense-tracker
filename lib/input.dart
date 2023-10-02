@@ -1,11 +1,9 @@
-// ignore_for_file: unused_local_variable
-
 import 'dart:async';
 import 'package:flutter_sensors/flutter_sensors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:sensors/sensors.dart';
-
+import 'package:rxdart/rxdart.dart';
 
 
 import 'calendar.dart';
@@ -50,58 +48,51 @@ class _IncomeExpensePageState extends State<IncomeExpensePage> {
   TextEditingController amountController = TextEditingController();
   TextEditingController noteController = TextEditingController();
 
-  bool isShaking = false; // Flag to track if the device is currently shaking
-  DateTime lastShakeTime = DateTime.now(); // Timestamp of the last detected shake
+  late StreamSubscription<AccelerometerEvent> accelerometerSubscription;
 
-  // ... Rest of your code ...
+  @override
+  void initState() {
+    super.initState();
+    initializeAccelerometer();
+  }
+
+  @override
+  void dispose() {
+    amountController.dispose();
+    noteController.dispose();
+    accelerometerSubscription.cancel(); // Dispose of the accelerometer stream
+    super.dispose();
+  }
 
   void initializeAccelerometer() {
-    var accelerometerSubscription = accelerometerEvents.listen((AccelerometerEvent event) {
+    accelerometerSubscription =
+        accelerometerEvents.listen((AccelerometerEvent event) {
+      // Calculate the total acceleration
       final double totalAcceleration =
           event.x * event.x + event.y * event.y + event.z * event.z;
 
+      // You can adjust the threshold for shaking based on your preference
+      // Smaller values will make it more sensitive to shaking
       final double shakeThreshold = 20.0;
-      final Duration cooldownDuration = Duration(seconds: 2); // Cooldown period in seconds
 
-      // Check if the device is shaking and if enough time has passed since the last shake
-      if (totalAcceleration > shakeThreshold &&
-          DateTime.now().difference(lastShakeTime) > cooldownDuration) {
-        // Device is shaking, handle shake detection
+      if (totalAcceleration > shakeThreshold) {
+        // Device is shaking, implement your response here
         handleShake();
       }
     });
   }
 
   void handleShake() {
-    // Update the last shake timestamp
-    lastShakeTime = DateTime.now();
-
-    // Perform actions only if the app is not already in a shaking state
-    if (!isShaking) {
-      setState(() {
-        isShaking = true; // Set the shaking flag to true
-      });
-
-      // Handle shake action, e.g., clear form fields
-      clearFormFields();
-
-      // Display a message to the user
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Shaking detected! Form fields cleared.'),
-          duration: Duration(seconds: 2),
-        ),
-      );
-
-      // Reset the shaking flag after a delay (e.g., 1 second)
-      Future.delayed(Duration(seconds: 1), () {
-        setState(() {
-          isShaking = false;
-        });
-      });
-    }
+    // Add your logic to respond to shaking here
+    // For example, you can clear the form fields or show a message
+    clearFormFields(); // Clear form fields when shaking
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Shaking detected! Form fields cleared.'),
+        duration: Duration(seconds: 2),
+      ),
+    );
   }
-
 
   @override
   Widget build(BuildContext context) {
